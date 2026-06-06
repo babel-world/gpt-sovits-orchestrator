@@ -1,0 +1,19 @@
+[project]
+name = "gpt-sovits-orchestrator"
+version = "0.1.0"
+description = "GPT-SoVITS Orchestrator"
+readme = "README.md"
+authors = [
+    { name = "MatsubaraSoda", email = "matsubarasoda@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "prefect>=3.7.4",
+]
+
+[project.scripts]
+gpt-sovits-orchestrator = "gpt_sovits_orchestrator.main:main"
+
+[build-system]
+requires = ["uv_build>=0.11.14,<0.12.0"]
+build-backend = "uv_build"
