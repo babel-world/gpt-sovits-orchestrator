@@ -7,8 +7,6 @@ DATA_02_DIR = LOCAL_DIR / "data_02"
 DATA_03_DIR = LOCAL_DIR / "data_03"
 DATA_04_DIR = LOCAL_DIR / "data_04"
 DATA_05_DIR = LOCAL_DIR / "data_05"
-HUBERT_INPUTS_DIR = DATA_05_DIR / "hubert_inputs"
-HUBERT_OUTPUTS_DIR = DATA_05_DIR / "hubert_outputs"
 
 ASR_SERVER_BASE_URL = "http://127.0.0.1:19031"
 SLICE_API_PATH = "/api/audio/slice"
