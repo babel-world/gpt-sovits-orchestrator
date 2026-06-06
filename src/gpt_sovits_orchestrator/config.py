@@ -6,10 +6,24 @@ DATA_01_DIR = LOCAL_DIR / "data_01"
 DATA_02_DIR = LOCAL_DIR / "data_02"
 DATA_03_DIR = LOCAL_DIR / "data_03"
 DATA_04_DIR = LOCAL_DIR / "data_04"
+DATA_05_DIR = LOCAL_DIR / "data_05"
+HUBERT_INPUTS_DIR = DATA_05_DIR / "hubert_inputs"
+HUBERT_OUTPUTS_DIR = DATA_05_DIR / "hubert_outputs"
 
 ASR_SERVER_BASE_URL = "http://127.0.0.1:19031"
 SLICE_API_PATH = "/api/audio/slice"
 TRANSCRIBE_API_PATH = "/api/transcribe"
+HUBERT_EXTRACT_PATH = "/api/features/chinese-hubert-base"
+HUBERT_START_PATH = "/api/features/chinese-hubert-base/start"
+HUBERT_STOP_PATH = "/api/features/chinese-hubert-base/stop"
+HUBERT_API_TIMEOUT_S = 120.0
+
+LOAD_SR = 32_000
+TARGET_SR = 16_000
+PEAK_LIMIT = 2.2
+NORM_MAX = 0.95
+NORM_ALPHA = 0.5
+NORM_SCALE = 1145.14
 
 NLP_SERVER_BASE_URL = "http://127.0.0.1:19032"
 G2P_JA_API_PATH = "/api/g2p/ja"
