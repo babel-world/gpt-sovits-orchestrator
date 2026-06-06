@@ -472,11 +472,15 @@ name = "gpt-sovits-orchestrator"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "httpx" },
     { name = "prefect" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "prefect", specifier = ">=3.7.4" }]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "prefect", specifier = ">=3.7.4" },
+]
 
 [[package]]
 name = "graphviz"
