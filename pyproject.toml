@@ -12,6 +12,7 @@ dependencies = [
     "librosa>=0.11.0",
     "numpy>=2.4.6",
     "prefect>=3.7.4",
+    "python-dotenv>=1.1.0",
 ]
 
 [project.scripts]

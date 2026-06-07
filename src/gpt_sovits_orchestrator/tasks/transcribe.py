@@ -12,6 +12,7 @@ from gpt_sovits_orchestrator.config import (
     ASR_SERVER_BASE_URL,
     MANIFEST_FIELDS,
     TRANSCRIBE_API_PATH,
+    TRANSCRIBE_API_TIMEOUT_S,
 )
 from gpt_sovits_orchestrator.utils.slice_filename import parse_slice_chunk_filename
 
@@ -34,7 +35,7 @@ def transcribe_slices(
     output_dir: Path,
     *,
     base_url: str = ASR_SERVER_BASE_URL,
-    timeout: float = 600.0,
+    timeout: float = TRANSCRIBE_API_TIMEOUT_S,
 ) -> Path:
     """Transcribe each WAV in a slice ZIP via ``POST /api/transcribe`` and write manifest CSV."""
     zip_path = zip_path.resolve()

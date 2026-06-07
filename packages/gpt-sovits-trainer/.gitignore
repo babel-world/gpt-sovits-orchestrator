@@ -1,0 +1,5 @@
+.runs/
+.models/
+.env
+__pycache__/
+*.egg-info/

@@ -10,6 +10,7 @@ from prefect import task
 
 from gpt_sovits_orchestrator.config import (
     ASR_SERVER_BASE_URL,
+    SERVER_HEALTH_CHECK_TIMEOUT_S,
     SV_API_TIMEOUT_S,
     SV_EXTRACT_PATH,
     SV_START_PATH,
@@ -39,7 +40,7 @@ def _array_to_npy_bytes(array: np.ndarray) -> bytes:
 
 def _check_server(base_url: str) -> None:
     try:
-        with httpx.Client(base_url=base_url, timeout=10.0) as client:
+        with httpx.Client(base_url=base_url, timeout=SERVER_HEALTH_CHECK_TIMEOUT_S) as client:
             response = client.get("/")
             response.raise_for_status()
     except httpx.HTTPError as exc:

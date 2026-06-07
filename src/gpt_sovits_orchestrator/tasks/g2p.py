@@ -8,6 +8,7 @@ import httpx
 from prefect import task
 
 from gpt_sovits_orchestrator.config import (
+    G2P_API_TIMEOUT_S,
     G2P_JA_API_PATH,
     G2P_MODE,
     G2P_OUTPUT_COLUMNS,
@@ -34,7 +35,7 @@ def g2p_manifest(
     output_dir: Path,
     *,
     base_url: str = NLP_SERVER_BASE_URL,
-    timeout: float = 60.0,
+    timeout: float = G2P_API_TIMEOUT_S,
 ) -> Path:
     """Run G2P on manifest CSV rows via ``POST /api/g2p/ja`` and write training CSV."""
     manifest_path = manifest_path.resolve()

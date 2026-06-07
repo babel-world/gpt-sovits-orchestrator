@@ -14,6 +14,7 @@ from gpt_sovits_orchestrator.config import (
     HUBERT_EXTRACT_PATH,
     HUBERT_START_PATH,
     HUBERT_STOP_PATH,
+    SERVER_HEALTH_CHECK_TIMEOUT_S,
 )
 from gpt_sovits_orchestrator.hubert.npz import hubert_npz_paths
 from gpt_sovits_orchestrator.hubert.preprocess import wav_bytes_to_hubert_input
@@ -39,7 +40,7 @@ def _array_to_npy_bytes(array: np.ndarray) -> bytes:
 
 def _check_server(base_url: str) -> None:
     try:
-        with httpx.Client(base_url=base_url, timeout=10.0) as client:
+        with httpx.Client(base_url=base_url, timeout=SERVER_HEALTH_CHECK_TIMEOUT_S) as client:
             response = client.get("/")
             response.raise_for_status()
     except httpx.HTTPError as exc:
