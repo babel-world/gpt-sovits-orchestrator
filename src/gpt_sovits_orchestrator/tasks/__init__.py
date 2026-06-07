@@ -1,3 +1,4 @@
+from gpt_sovits_orchestrator.tasks.assemble import assemble_manifest
 from gpt_sovits_orchestrator.tasks.g2p import g2p_manifest
 from gpt_sovits_orchestrator.tasks.hubert import (
     extract_hubert_features,
@@ -20,6 +21,7 @@ from gpt_sovits_orchestrator.tasks.transcribe import transcribe_slices
 from gpt_sovits_orchestrator.tasks.wav32k import wav32k_from_zip
 
 __all__ = [
+    "assemble_manifest",
     "extract_hubert_features",
     "extract_semantic_tokens",
     "extract_sv_embeddings",

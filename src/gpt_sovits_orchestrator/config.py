@@ -10,6 +10,7 @@ DATA_05_DIR = LOCAL_DIR / "data_05"
 DATA_06_DIR = LOCAL_DIR / "data_06"
 DATA_07_DIR = LOCAL_DIR / "data_07"
 DATA_08_DIR = LOCAL_DIR / "data_08"
+DATA_09_DIR = LOCAL_DIR / "data_09"
 
 ASR_SERVER_BASE_URL = "http://127.0.0.1:19031"
 TTS_SERVER_BASE_URL = "http://127.0.0.1:19033"
@@ -46,6 +47,10 @@ G2P_MODE = "prosody"
 MANIFEST_FIELDS = ("filename", "speaker", "language", "text", "probability")
 G2P_COLUMNS = ("norm_text", "phones", "phone_count", "word2ph", "status", "error")
 G2P_OUTPUT_COLUMNS = MANIFEST_FIELDS + G2P_COLUMNS
+
+ASSEMBLE_AUDIT_COLUMNS = ("semantic_count", "hubert_T", "sv_dim", "wav32k_bytes")
+ASSEMBLE_ELIGIBLE_COLUMNS = ("eligible_gpt", "eligible_sovits")
+ASSEMBLE_OUTPUT_COLUMNS = G2P_OUTPUT_COLUMNS + ASSEMBLE_AUDIT_COLUMNS + ASSEMBLE_ELIGIBLE_COLUMNS
 
 PRIVACY_ALLOWED_LANGUAGE = "ja"
 PRIVACY_MIN_PROBABILITY = 0.95
