@@ -17,6 +17,7 @@ from gpt_sovits_orchestrator.tasks.sv import (
     sv_from_zip,
 )
 from gpt_sovits_orchestrator.tasks.transcribe import transcribe_slices
+from gpt_sovits_orchestrator.tasks.wav32k import wav32k_from_zip
 
 __all__ = [
     "extract_hubert_features",
@@ -32,4 +33,5 @@ __all__ = [
     "slice_audio",
     "sv_from_zip",
     "transcribe_slices",
+    "wav32k_from_zip",
 ]
