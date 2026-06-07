@@ -7,6 +7,7 @@ DATA_02_DIR = LOCAL_DIR / "data_02"
 DATA_03_DIR = LOCAL_DIR / "data_03"
 DATA_04_DIR = LOCAL_DIR / "data_04"
 DATA_05_DIR = LOCAL_DIR / "data_05"
+DATA_06_DIR = LOCAL_DIR / "data_06"
 
 ASR_SERVER_BASE_URL = "http://127.0.0.1:19031"
 SLICE_API_PATH = "/api/audio/slice"
@@ -16,9 +17,15 @@ HUBERT_START_PATH = "/api/features/chinese-hubert-base/start"
 HUBERT_STOP_PATH = "/api/features/chinese-hubert-base/stop"
 HUBERT_API_TIMEOUT_S = 120.0
 
+SV_EXTRACT_PATH = "/api/features/speech-eres2netv2w24s4ep4-sv-zh-cn-16k-common"
+SV_START_PATH = "/api/features/speech-eres2netv2w24s4ep4-sv-zh-cn-16k-common/start"
+SV_STOP_PATH = "/api/features/speech-eres2netv2w24s4ep4-sv-zh-cn-16k-common/stop"
+SV_API_TIMEOUT_S = 120.0
+
 LOAD_SR = 32_000
 TARGET_SR = 16_000
 PEAK_LIMIT = 2.2
+PEAK_NORM = 0.95
 NORM_MAX = 0.95
 NORM_ALPHA = 0.5
 NORM_SCALE = 1145.14
