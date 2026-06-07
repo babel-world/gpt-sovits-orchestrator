@@ -8,8 +8,10 @@ DATA_03_DIR = LOCAL_DIR / "data_03"
 DATA_04_DIR = LOCAL_DIR / "data_04"
 DATA_05_DIR = LOCAL_DIR / "data_05"
 DATA_06_DIR = LOCAL_DIR / "data_06"
+DATA_07_DIR = LOCAL_DIR / "data_07"
 
 ASR_SERVER_BASE_URL = "http://127.0.0.1:19031"
+TTS_SERVER_BASE_URL = "http://127.0.0.1:19033"
 SLICE_API_PATH = "/api/audio/slice"
 TRANSCRIBE_API_PATH = "/api/transcribe"
 HUBERT_EXTRACT_PATH = "/api/features/chinese-hubert-base"
@@ -21,6 +23,11 @@ SV_EXTRACT_PATH = "/api/features/speech-eres2netv2w24s4ep4-sv-zh-cn-16k-common"
 SV_START_PATH = "/api/features/speech-eres2netv2w24s4ep4-sv-zh-cn-16k-common/start"
 SV_STOP_PATH = "/api/features/speech-eres2netv2w24s4ep4-sv-zh-cn-16k-common/stop"
 SV_API_TIMEOUT_S = 120.0
+
+V2PRO_EXTRACT_PATH = "/api/features/v2pro"
+V2PRO_START_PATH = "/api/features/v2pro/start"
+V2PRO_STOP_PATH = "/api/features/v2pro/stop"
+V2PRO_API_TIMEOUT_S = 120.0
 
 LOAD_SR = 32_000
 TARGET_SR = 16_000

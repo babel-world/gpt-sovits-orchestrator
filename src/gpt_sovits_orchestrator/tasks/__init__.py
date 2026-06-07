@@ -4,6 +4,12 @@ from gpt_sovits_orchestrator.tasks.hubert import (
     hubert_from_zip,
     prepare_hubert_inputs,
 )
+from gpt_sovits_orchestrator.tasks.semantic import (
+    extract_semantic_tokens,
+    prepare_semantic_inputs,
+    semantic_from_hubert_out,
+    semantic_from_zip,
+)
 from gpt_sovits_orchestrator.tasks.slice import slice_audio
 from gpt_sovits_orchestrator.tasks.sv import (
     extract_sv_embeddings,
@@ -14,11 +20,15 @@ from gpt_sovits_orchestrator.tasks.transcribe import transcribe_slices
 
 __all__ = [
     "extract_hubert_features",
+    "extract_semantic_tokens",
     "extract_sv_embeddings",
     "g2p_manifest",
     "hubert_from_zip",
     "prepare_hubert_inputs",
+    "prepare_semantic_inputs",
     "prepare_sv_inputs",
+    "semantic_from_hubert_out",
+    "semantic_from_zip",
     "slice_audio",
     "sv_from_zip",
     "transcribe_slices",
