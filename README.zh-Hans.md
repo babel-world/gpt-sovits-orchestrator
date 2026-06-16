@@ -17,3 +17,4 @@ uv run gpt-sovits-orchestrator
 ## 文档
 
 - [数据流水线](docs/data-pipeline.md) — source → slice → … → train 各阶段 API、产物与命名约定
+- [数据流水线 · AI-Hobbyist](docs/data-pipeline.md#ai-hobbyist-流水线外部-wav--lab-数据集) — 外部 wav+lab 数据集导入

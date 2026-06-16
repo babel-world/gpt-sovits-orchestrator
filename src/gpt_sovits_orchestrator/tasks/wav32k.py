@@ -46,7 +46,8 @@ def wav32k_from_zip(
     with zipfile.ZipFile(zip_path, "r") as in_archive, zipfile.ZipFile(
         out_zip_path,
         "w",
-        compression=zipfile.ZIP_DEFLATED,
+        compression=zipfile.ZIP_STORED,
+        allowZip64=True,
     ) as out_archive:
         for index, name in enumerate(wav_names, start=1):
             wav_key = Path(name).name

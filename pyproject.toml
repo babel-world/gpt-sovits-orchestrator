@@ -17,6 +17,7 @@ dependencies = [
 
 [project.scripts]
 gpt-sovits-orchestrator = "gpt_sovits_orchestrator.main:main"
+gpt-sovits-orchestrator-ai-hobbyist = "gpt_sovits_orchestrator.ai_hobbyist_main:main"
 
 [build-system]
 requires = ["uv_build>=0.11.14,<0.12.0"]

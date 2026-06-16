@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from gpt_sovits_trainer.paths import DATA_10_DIR, EXP_NAME, GPT_SOVITS_ROOT, PRETRAINED_S2D, PRETRAINED_S2G, ensure_data_dirs
+from gpt_sovits_trainer.paths import GPT_SOVITS_ROOT, PRETRAINED_S2D, PRETRAINED_S2G, ensure_data_dirs
 from gpt_sovits_trainer.stores import ModalityStores
 from gpt_sovits_trainer.vendor_env import bootstrap_vendor
 
@@ -20,9 +20,12 @@ def train_s2(
     *,
     epochs: int = 2,
     batch_size: int = 4,
+    exp_name: str = "manbo",
+    weights_dir: Path | None = None,
 ) -> Path:
     bootstrap_vendor()
-    ensure_data_dirs()
+    layout = ensure_data_dirs()
+    output_dir = weights_dir or layout.weights_dir
 
     # 1. Configuration matching vendor defaults
     with open(GPT_SOVITS_ROOT / "configs" / "s2v2Pro.json", encoding="utf-8") as handle:
@@ -181,7 +184,7 @@ def train_s2(
     # 7. Save Artifacts (vendor-compatible: config + v2Pro header)
     from io import BytesIO
 
-    out_path = DATA_10_DIR / f"{EXP_NAME}.pth"
+    out_path = output_dir / f"{exp_name}.pth"
     save_dict = {
         # process_ckpt.savee skips enc_q; inference loads with strict=False after del enc_q
         "weight": {

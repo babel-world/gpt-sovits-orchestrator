@@ -18,6 +18,7 @@ from gpt_sovits_orchestrator.config import (
 )
 from gpt_sovits_orchestrator.sv.npz import sv_npz_paths
 from gpt_sovits_orchestrator.sv.preprocess import wav_bytes_to_sv_input
+from gpt_sovits_orchestrator.utils.npz_stream import NpzStreamWriter
 
 
 def _list_wav_entries(zip_path: Path) -> list[str]:
@@ -84,7 +85,7 @@ def _extract_embedding(
 def prepare_sv_inputs(
     zip_path: Path,
     in_npz_path: Path,
-) -> dict[str, np.ndarray]:
+) -> Path:
     """Convert slice WAV entries in a ZIP to an SV input NPZ archive."""
     zip_path = zip_path.resolve()
     in_npz_path = in_npz_path.resolve()
@@ -94,11 +95,11 @@ def prepare_sv_inputs(
         raise FileNotFoundError(f"Slice ZIP not found: {zip_path}")
 
     wav_names = _list_wav_entries(zip_path)
-    arrays: dict[str, np.ndarray] = {}
     skipped = 0
     total = len(wav_names)
+    written = 0
 
-    with zipfile.ZipFile(zip_path, "r") as archive:
+    with NpzStreamWriter(in_npz_path) as writer, zipfile.ZipFile(zip_path, "r") as archive:
         for index, name in enumerate(wav_names, start=1):
             wav_key = Path(name).name
             arr = wav_bytes_to_sv_input(archive.read(name), wav_key)
@@ -106,50 +107,54 @@ def prepare_sv_inputs(
                 skipped += 1
                 print(f"SKIP [{index}/{total}] {wav_key}")
                 continue
-            arrays[wav_key] = arr
+            writer.add(wav_key, arr)
+            written += 1
             print(f"OK   [{index}/{total}] {wav_key}")
 
-    if not arrays:
+    if written == 0:
         raise RuntimeError(f"No SV inputs generated from ZIP: {zip_path}")
 
-    np.savez(in_npz_path, **arrays)
-    print(f"Saved SV input NPZ: {in_npz_path} ({len(arrays)} arrays, {skipped} skipped)")
-    return arrays
+    print(f"Saved SV input NPZ: {in_npz_path} ({written} arrays, {skipped} skipped)")
+    return in_npz_path
 
 
 @task(name="extract-sv-embeddings", log_prints=True)
 def extract_sv_embeddings(
-    inputs: dict[str, np.ndarray],
+    in_npz_path: Path,
     out_npz_path: Path,
     *,
     base_url: str = ASR_SERVER_BASE_URL,
     preload: bool = True,
 ) -> Path:
     """Extract SV embeddings via asr-server API and save as NPZ."""
+    in_npz_path = in_npz_path.resolve()
     out_npz_path = out_npz_path.resolve()
     out_npz_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if not inputs:
-        raise ValueError("SV inputs dict is empty")
+    if not in_npz_path.is_file():
+        raise FileNotFoundError(f"SV input NPZ not found: {in_npz_path}")
 
     _check_server(base_url)
-    outputs: dict[str, np.ndarray] = {}
     failures: list[str] = []
+    written = 0
 
-    with httpx.Client(base_url=base_url, timeout=SV_API_TIMEOUT_S) as client:
+    with np.load(in_npz_path) as inputs, NpzStreamWriter(out_npz_path) as writer, httpx.Client(
+        base_url=base_url, timeout=SV_API_TIMEOUT_S
+    ) as client:
         if preload:
             _api_start(client, SV_START_PATH)
         try:
-            for wav_key, array in sorted(inputs.items()):
+            for wav_key in sorted(inputs.files):
                 stem = Path(wav_key).stem
                 try:
                     embedding = _extract_embedding(
                         stem,
-                        _array_to_npy_bytes(array),
+                        _array_to_npy_bytes(inputs[wav_key]),
                         client=client,
                         extract_path=SV_EXTRACT_PATH,
                     )
-                    outputs[wav_key] = embedding
+                    writer.add(wav_key, embedding)
+                    written += 1
                     print(f"OK   {wav_key} -> embedding {embedding.shape}")
                 except RuntimeError as exc:
                     failures.append(wav_key)
@@ -158,12 +163,11 @@ def extract_sv_embeddings(
             if preload:
                 _api_stop(client, SV_STOP_PATH)
 
-    print(f"Extracted SV embeddings: {len(outputs)} ok, {len(failures)} failed")
+    print(f"Extracted SV embeddings: {written} ok, {len(failures)} failed")
     if failures:
         raise RuntimeError(f"SV extraction failed for: {', '.join(failures)}")
 
-    np.savez(out_npz_path, **outputs)
-    print(f"Saved SV output NPZ: {out_npz_path} ({len(outputs)} arrays)")
+    print(f"Saved SV output NPZ: {out_npz_path} ({written} arrays)")
     return out_npz_path
 
 
@@ -181,9 +185,9 @@ def sv_from_zip(
     data_dir.mkdir(parents=True, exist_ok=True)
 
     in_npz_path, out_npz_path = sv_npz_paths(zip_path, data_dir)
-    inputs = prepare_sv_inputs(zip_path, in_npz_path)
+    prepare_sv_inputs(zip_path, in_npz_path)
     extract_sv_embeddings(
-        inputs,
+        in_npz_path,
         out_npz_path,
         base_url=base_url,
         preload=preload,

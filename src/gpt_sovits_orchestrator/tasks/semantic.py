@@ -18,6 +18,7 @@ from gpt_sovits_orchestrator.config import (
 from gpt_sovits_orchestrator.hubert.npz import hubert_npz_paths
 from gpt_sovits_orchestrator.semantic.npz import semantic_npz_paths
 from gpt_sovits_orchestrator.semantic.preprocess import hubert_to_semantic_input
+from gpt_sovits_orchestrator.utils.npz_stream import NpzStreamWriter
 
 TOKEN_MIN = 0
 TOKEN_MAX = 1023
@@ -75,7 +76,7 @@ def _extract_semantic(
 def prepare_semantic_inputs(
     hubert_out_npz: Path,
     in_npz_path: Path,
-) -> dict[str, np.ndarray]:
+) -> Path:
     """Transpose HuBERT output NPZ entries to semantic worker input NPZ."""
     hubert_out_npz = hubert_out_npz.resolve()
     in_npz_path = in_npz_path.resolve()
@@ -84,26 +85,24 @@ def prepare_semantic_inputs(
     if not hubert_out_npz.is_file():
         raise FileNotFoundError(f"HuBERT output NPZ not found: {hubert_out_npz}")
 
-    hubert_data = np.load(hubert_out_npz)
-    if not hubert_data.files:
-        raise ValueError(f"HuBERT output NPZ is empty: {hubert_out_npz}")
+    with np.load(hubert_out_npz) as hubert_data, NpzStreamWriter(in_npz_path) as writer:
+        keys = sorted(hubert_data.files)
+        total = len(keys)
+        if total == 0:
+            raise ValueError(f"HuBERT output NPZ is empty: {hubert_out_npz}")
 
-    arrays: dict[str, np.ndarray] = {}
-    keys = sorted(hubert_data.files)
-    total = len(keys)
+        for index, key in enumerate(keys, start=1):
+            semantic_in = hubert_to_semantic_input(hubert_data[key])
+            writer.add(key, semantic_in)
+            print(f"OK   [{index}/{total}] {key} -> {semantic_in.shape}")
 
-    for index, key in enumerate(keys, start=1):
-        arrays[key] = hubert_to_semantic_input(hubert_data[key])
-        print(f"OK   [{index}/{total}] {key} -> {arrays[key].shape}")
-
-    np.savez(in_npz_path, **arrays)
-    print(f"Saved semantic input NPZ: {in_npz_path} ({len(arrays)} arrays)")
-    return arrays
+    print(f"Saved semantic input NPZ: {in_npz_path} ({total} arrays)")
+    return in_npz_path
 
 
 @task(name="extract-semantic-tokens", log_prints=True)
 def extract_semantic_tokens(
-    inputs: dict[str, np.ndarray],
+    in_npz_path: Path,
     out_npz_path: Path,
     hubert_out_npz: Path,
     *,
@@ -111,63 +110,70 @@ def extract_semantic_tokens(
     preload: bool = True,
 ) -> Path:
     """Extract semantic tokens via tts-server v2pro API and save as NPZ."""
+    in_npz_path = in_npz_path.resolve()
     out_npz_path = out_npz_path.resolve()
     out_npz_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if not inputs:
-        raise ValueError("Semantic inputs dict is empty")
+    if not in_npz_path.is_file():
+        raise FileNotFoundError(f"Semantic input NPZ not found: {in_npz_path}")
 
     hubert_data = np.load(hubert_out_npz.resolve()) if hubert_out_npz.is_file() else None
 
     _check_server(base_url)
-    outputs: dict[str, np.ndarray] = {}
     failures: list[str] = []
+    written = 0
 
-    with httpx.Client(base_url=base_url, timeout=V2PRO_API_TIMEOUT_S) as client:
-        if preload:
-            _api_start(client, V2PRO_START_PATH)
-        try:
-            for wav_key, array in sorted(inputs.items()):
-                stem = Path(wav_key).stem
-                try:
-                    semantic = _extract_semantic(
-                        stem,
-                        _array_to_npy_bytes(array),
-                        client=client,
-                        extract_path=V2PRO_EXTRACT_PATH,
-                    )
-                    if semantic.dtype != np.int32:
-                        semantic = semantic.astype(np.int32)
-                    if semantic.ndim != 1:
-                        raise ValueError(f"Expected shape (T_sem,), got {semantic.shape}")
-                    if semantic.size == 0:
-                        raise ValueError("Empty semantic output")
-                    if semantic.min() < TOKEN_MIN or semantic.max() > TOKEN_MAX:
-                        raise ValueError(
-                            f"Token range [{semantic.min()}, {semantic.max()}] "
-                            f"outside [{TOKEN_MIN}, {TOKEN_MAX}]"
-                        )
-                    if hubert_data is not None and wav_key in hubert_data.files:
-                        expected_t = hubert_data[wav_key].shape[1] // 2
-                        if semantic.shape[0] != expected_t:
-                            raise ValueError(
-                                f"T_sem={semantic.shape[0]}, expected hubert_T/2={expected_t}"
-                            )
-                    outputs[wav_key] = semantic
-                    print(f"OK   {wav_key} -> semantic {semantic.shape}")
-                except (RuntimeError, ValueError) as exc:
-                    failures.append(wav_key)
-                    print(f"FAIL {wav_key}: {exc}")
-        finally:
+    try:
+        with np.load(in_npz_path) as inputs, NpzStreamWriter(out_npz_path) as writer, httpx.Client(
+            base_url=base_url, timeout=V2PRO_API_TIMEOUT_S
+        ) as client:
             if preload:
-                _api_stop(client, V2PRO_STOP_PATH)
+                _api_start(client, V2PRO_START_PATH)
+            try:
+                for wav_key in sorted(inputs.files):
+                    stem = Path(wav_key).stem
+                    try:
+                        semantic = _extract_semantic(
+                            stem,
+                            _array_to_npy_bytes(inputs[wav_key]),
+                            client=client,
+                            extract_path=V2PRO_EXTRACT_PATH,
+                        )
+                        if semantic.dtype != np.int32:
+                            semantic = semantic.astype(np.int32)
+                        if semantic.ndim != 1:
+                            raise ValueError(f"Expected shape (T_sem,), got {semantic.shape}")
+                        if semantic.size == 0:
+                            raise ValueError("Empty semantic output")
+                        if semantic.min() < TOKEN_MIN or semantic.max() > TOKEN_MAX:
+                            raise ValueError(
+                                f"Token range [{semantic.min()}, {semantic.max()}] "
+                                f"outside [{TOKEN_MIN}, {TOKEN_MAX}]"
+                            )
+                        if hubert_data is not None and wav_key in hubert_data.files:
+                            expected_t = hubert_data[wav_key].shape[1] // 2
+                            if semantic.shape[0] != expected_t:
+                                raise ValueError(
+                                    f"T_sem={semantic.shape[0]}, expected hubert_T/2={expected_t}"
+                                )
+                        writer.add(wav_key, semantic)
+                        written += 1
+                        print(f"OK   {wav_key} -> semantic {semantic.shape}")
+                    except (RuntimeError, ValueError) as exc:
+                        failures.append(wav_key)
+                        print(f"FAIL {wav_key}: {exc}")
+            finally:
+                if preload:
+                    _api_stop(client, V2PRO_STOP_PATH)
+    finally:
+        if hubert_data is not None:
+            hubert_data.close()
 
-    print(f"Extracted semantic tokens: {len(outputs)} ok, {len(failures)} failed")
+    print(f"Extracted semantic tokens: {written} ok, {len(failures)} failed")
     if failures:
         raise RuntimeError(f"Semantic extraction failed for: {', '.join(failures)}")
 
-    np.savez(out_npz_path, **outputs)
-    print(f"Saved semantic output NPZ: {out_npz_path} ({len(outputs)} arrays)")
+    print(f"Saved semantic output NPZ: {out_npz_path} ({written} arrays)")
     return out_npz_path
 
 
@@ -185,9 +191,9 @@ def semantic_from_hubert_out(
     data_dir.mkdir(parents=True, exist_ok=True)
 
     in_npz_path, out_npz_path = semantic_npz_paths(hubert_out_npz, data_dir)
-    inputs = prepare_semantic_inputs(hubert_out_npz, in_npz_path)
+    prepare_semantic_inputs(hubert_out_npz, in_npz_path)
     extract_semantic_tokens(
-        inputs,
+        in_npz_path,
         out_npz_path,
         hubert_out_npz,
         base_url=base_url,

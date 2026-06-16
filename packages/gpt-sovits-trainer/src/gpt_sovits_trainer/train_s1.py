@@ -9,7 +9,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from gpt_sovits_trainer.paths import DATA_10_DIR, EXP_NAME, PRETRAINED_S1, ensure_data_dirs
+from gpt_sovits_trainer.paths import PRETRAINED_S1, ensure_data_dirs
 from gpt_sovits_trainer.stores import ModalityStores
 from gpt_sovits_trainer.vendor_env import bootstrap_vendor
 
@@ -19,9 +19,12 @@ def train_s1(
     *,
     epochs: int = 2,
     batch_size: int = 4,
+    exp_name: str = "manbo",
+    weights_dir: Path | None = None,
 ) -> Path:
     bootstrap_vendor()
-    ensure_data_dirs()
+    layout = ensure_data_dirs()
+    output_dir = weights_dir or layout.weights_dir
 
     # 1. Configuration matching vendor defaults
     config = {
@@ -163,7 +166,7 @@ def train_s1(
 
     # 6. Save Artifacts
     # In S1, the saved weight is typically stripped of optimizers to save space
-    out_path = DATA_10_DIR / f"{EXP_NAME}.ckpt"
+    out_path = output_dir / f"{exp_name}.ckpt"
     save_dict = {
         # api.py loads into Text2SemanticLightningModule, keys must be model.*
         "weight": {

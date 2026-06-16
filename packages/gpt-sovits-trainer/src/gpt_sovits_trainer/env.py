@@ -15,3 +15,12 @@ def _env_int(key: str, default: int) -> int:
 TRAINER_S1_EPOCHS = _env_int("TRAINER_S1_EPOCHS", 2)
 TRAINER_S2_EPOCHS = _env_int("TRAINER_S2_EPOCHS", 2)
 TRAINER_BATCH_SIZE = _env_int("TRAINER_BATCH_SIZE", 4)
+
+
+def _env_str(key: str, default: str) -> str:
+    return os.getenv(key, default)
+
+
+TRAINER_BASE_NAME = _env_str("TRAINER_BASE_NAME", "manbo")
+TRAINER_ZIP_STEM = _env_str("TRAINER_ZIP_STEM", "manbo_slices")
+TRAINER_WORKSPACE = _env_str("TRAINER_WORKSPACE", "")

@@ -18,6 +18,7 @@ from gpt_sovits_orchestrator.config import (
 )
 from gpt_sovits_orchestrator.hubert.npz import hubert_npz_paths
 from gpt_sovits_orchestrator.hubert.preprocess import wav_bytes_to_hubert_input
+from gpt_sovits_orchestrator.utils.npz_stream import NpzStreamWriter
 
 
 def _list_wav_entries(zip_path: Path) -> list[str]:
@@ -84,7 +85,7 @@ def _extract_feature(
 def prepare_hubert_inputs(
     zip_path: Path,
     in_npz_path: Path,
-) -> dict[str, np.ndarray]:
+) -> Path:
     """Convert slice WAV entries in a ZIP to a HuBERT input NPZ archive."""
     zip_path = zip_path.resolve()
     in_npz_path = in_npz_path.resolve()
@@ -94,11 +95,11 @@ def prepare_hubert_inputs(
         raise FileNotFoundError(f"Slice ZIP not found: {zip_path}")
 
     wav_names = _list_wav_entries(zip_path)
-    arrays: dict[str, np.ndarray] = {}
     skipped = 0
     total = len(wav_names)
+    written = 0
 
-    with zipfile.ZipFile(zip_path, "r") as archive:
+    with NpzStreamWriter(in_npz_path) as writer, zipfile.ZipFile(zip_path, "r") as archive:
         for index, name in enumerate(wav_names, start=1):
             wav_key = Path(name).name
             arr = wav_bytes_to_hubert_input(archive.read(name), wav_key)
@@ -106,50 +107,54 @@ def prepare_hubert_inputs(
                 skipped += 1
                 print(f"SKIP [{index}/{total}] {wav_key}")
                 continue
-            arrays[wav_key] = arr
+            writer.add(wav_key, arr)
+            written += 1
             print(f"OK   [{index}/{total}] {wav_key}")
 
-    if not arrays:
+    if written == 0:
         raise RuntimeError(f"No HuBERT inputs generated from ZIP: {zip_path}")
 
-    np.savez(in_npz_path, **arrays)
-    print(f"Saved HuBERT input NPZ: {in_npz_path} ({len(arrays)} arrays, {skipped} skipped)")
-    return arrays
+    print(f"Saved HuBERT input NPZ: {in_npz_path} ({written} arrays, {skipped} skipped)")
+    return in_npz_path
 
 
 @task(name="extract-hubert-features", log_prints=True)
 def extract_hubert_features(
-    inputs: dict[str, np.ndarray],
+    in_npz_path: Path,
     out_npz_path: Path,
     *,
     base_url: str = ASR_SERVER_BASE_URL,
     preload: bool = True,
 ) -> Path:
     """Extract HuBERT features via asr-server API and save as NPZ."""
+    in_npz_path = in_npz_path.resolve()
     out_npz_path = out_npz_path.resolve()
     out_npz_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if not inputs:
-        raise ValueError("HuBERT inputs dict is empty")
+    if not in_npz_path.is_file():
+        raise FileNotFoundError(f"HuBERT input NPZ not found: {in_npz_path}")
 
     _check_server(base_url)
-    outputs: dict[str, np.ndarray] = {}
     failures: list[str] = []
+    written = 0
 
-    with httpx.Client(base_url=base_url, timeout=HUBERT_API_TIMEOUT_S) as client:
+    with np.load(in_npz_path) as inputs, NpzStreamWriter(out_npz_path) as writer, httpx.Client(
+        base_url=base_url, timeout=HUBERT_API_TIMEOUT_S
+    ) as client:
         if preload:
             _api_start(client, HUBERT_START_PATH)
         try:
-            for wav_key, array in sorted(inputs.items()):
+            for wav_key in sorted(inputs.files):
                 stem = Path(wav_key).stem
                 try:
                     feature = _extract_feature(
                         stem,
-                        _array_to_npy_bytes(array),
+                        _array_to_npy_bytes(inputs[wav_key]),
                         client=client,
                         extract_path=HUBERT_EXTRACT_PATH,
                     )
-                    outputs[wav_key] = feature
+                    writer.add(wav_key, feature)
+                    written += 1
                     print(f"OK   {wav_key} -> feature {feature.shape}")
                 except RuntimeError as exc:
                     failures.append(wav_key)
@@ -158,12 +163,11 @@ def extract_hubert_features(
             if preload:
                 _api_stop(client, HUBERT_STOP_PATH)
 
-    print(f"Extracted HuBERT features: {len(outputs)} ok, {len(failures)} failed")
+    print(f"Extracted HuBERT features: {written} ok, {len(failures)} failed")
     if failures:
         raise RuntimeError(f"HuBERT extraction failed for: {', '.join(failures)}")
 
-    np.savez(out_npz_path, **outputs)
-    print(f"Saved HuBERT output NPZ: {out_npz_path} ({len(outputs)} arrays)")
+    print(f"Saved HuBERT output NPZ: {out_npz_path} ({written} arrays)")
     return out_npz_path
 
 
@@ -181,9 +185,9 @@ def hubert_from_zip(
     data_dir.mkdir(parents=True, exist_ok=True)
 
     in_npz_path, out_npz_path = hubert_npz_paths(zip_path, data_dir)
-    inputs = prepare_hubert_inputs(zip_path, in_npz_path)
+    prepare_hubert_inputs(zip_path, in_npz_path)
     extract_hubert_features(
-        inputs,
+        in_npz_path,
         out_npz_path,
         base_url=base_url,
         preload=preload,
