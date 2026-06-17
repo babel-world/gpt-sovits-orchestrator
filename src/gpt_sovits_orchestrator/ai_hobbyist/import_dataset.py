@@ -5,7 +5,7 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from gpt_sovits_orchestrator.ai_hobbyist.slug import slices_zip_stem, validate_speaker_slug
+from gpt_sovits_orchestrator.workspace.slug import slices_zip_stem, validate_speaker_slug
 from gpt_sovits_orchestrator.config import MANIFEST_FIELDS
 
 

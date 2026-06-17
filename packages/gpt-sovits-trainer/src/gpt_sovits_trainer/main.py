@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import argparse
+import sys
 from pathlib import Path
 
 from gpt_sovits_trainer.download_models import ensure_pretrained_models
@@ -22,6 +24,7 @@ from gpt_sovits_trainer.paths import (
 from gpt_sovits_trainer.stores import ModalityStores
 from gpt_sovits_trainer.train_s1 import train_s1
 from gpt_sovits_trainer.train_s2 import train_s2
+from gpt_sovits_trainer.workspace import PIPELINE_CHOICES, resolve_trainer_target
 
 
 def trainer_flow(
@@ -71,11 +74,52 @@ def trainer_flow(
     return ckpt, pth
 
 
-def main() -> None:
-    ckpt, pth = trainer_flow()
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="gpt-sovits-trainer",
+        description="GPT-SoVITS s1/s2 training (usually invoked by gpt-sovits-orchestrator)",
+    )
+    parser.add_argument(
+        "pipeline",
+        nargs="?",
+        choices=PIPELINE_CHOICES,
+        help="pipeline id (dry-vocal or ai-hobbyist)",
+    )
+    parser.add_argument(
+        "speaker",
+        nargs="?",
+        help="speaker slug (e.g. manbo, jinxi)",
+    )
+    return parser
+
+
+def _resolve_training_target(
+    pipeline: str | None,
+    speaker: str | None,
+) -> tuple[str, str, str]:
+    if pipeline and speaker:
+        return resolve_trainer_target(pipeline, speaker)
+    if pipeline or speaker:
+        raise SystemExit("pipeline and speaker must be provided together")
+    if TRAINER_WORKSPACE.strip():
+        return TRAINER_WORKSPACE.strip(), TRAINER_BASE_NAME, TRAINER_ZIP_STEM
+    raise SystemExit(
+        "usage: gpt-sovits-trainer {dry-vocal|ai-hobbyist} speaker\n"
+        "or set TRAINER_WORKSPACE in repo root .env (legacy)"
+    )
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = _build_parser().parse_args(argv)
+    workspace, base_name, zip_stem = _resolve_training_target(args.pipeline, args.speaker)
+    ckpt, pth = trainer_flow(
+        workspace=workspace,
+        base_name=base_name,
+        zip_stem=zip_stem,
+    )
     print(f"data_10 ready: {ckpt}")
     print(f"data_10 ready: {pth}")
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

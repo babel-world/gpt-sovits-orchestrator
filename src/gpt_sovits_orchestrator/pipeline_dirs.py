@@ -3,18 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from gpt_sovits_orchestrator.config import (
-    DATA_02_DIR,
-    DATA_03_DIR,
-    DATA_04_DIR,
-    DATA_05_DIR,
-    DATA_06_DIR,
-    DATA_07_DIR,
-    DATA_08_DIR,
-    DATA_09_DIR,
-    LOCAL_DIR,
-)
-
 
 @dataclass(frozen=True)
 class PipelineStageDirs:
@@ -29,20 +17,6 @@ class PipelineStageDirs:
     data_08: Path
     data_09: Path
     data_10: Path
-
-    @classmethod
-    def legacy_local(cls) -> PipelineStageDirs:
-        return cls(
-            data_02=DATA_02_DIR,
-            data_03=DATA_03_DIR,
-            data_04=DATA_04_DIR,
-            data_05=DATA_05_DIR,
-            data_06=DATA_06_DIR,
-            data_07=DATA_07_DIR,
-            data_08=DATA_08_DIR,
-            data_09=DATA_09_DIR,
-            data_10=LOCAL_DIR / "data_10",
-        )
 
     @classmethod
     def under_workspace_data(cls, workspace_root: Path) -> PipelineStageDirs:

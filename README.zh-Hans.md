@@ -9,12 +9,16 @@
 ```bash
 cp .env.example .env
 uv sync
-uv run gpt-sovits-orchestrator
+
+# 一步到位：data/02–09 同进程，data/10 训练 subprocess 调 trainer
+uv run gpt-sovits-orchestrator dry-vocal manbo
+uv run gpt-sovits-orchestrator ai-hobbyist jinxi
 ```
 
-可调参数见根目录 [`.env.example`](.env.example)（仅 orchestrator；默认值为本地 smoke 验收配置）。
+工作区：`.local/{pipeline}/{speaker}/inbox` 与 `data/02 … data/10`。
+
+可调参数见根目录 [`.env.example`](.env.example)（orchestrator 与 trainer 共用）。
 
 ## 文档
 
-- [数据流水线](docs/data-pipeline.md) — source → slice → … → train 各阶段 API、产物与命名约定
-- [数据流水线 · AI-Hobbyist](docs/data-pipeline.md#ai-hobbyist-流水线外部-wav--lab-数据集) — 外部 wav+lab 数据集导入
+- [数据流水线](docs/data-pipeline.md) — 各阶段 API、产物与命名约定

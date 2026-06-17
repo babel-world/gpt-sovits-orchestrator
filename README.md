@@ -9,10 +9,15 @@ A personal project for orchestrating GPT-SoVITS workflows with [Prefect](https:/
 ```bash
 cp .env.example .env
 uv sync
-uv run gpt-sovits-orchestrator
+
+# Full pipeline: data/02–09 in-process, then training (data/10) via subprocess
+uv run gpt-sovits-orchestrator dry-vocal manbo
+uv run gpt-sovits-orchestrator ai-hobbyist jinxi
 ```
 
-Configurable parameters are in the root [`.env.example`](.env.example) (orchestrator only; defaults target local smoke validation).
+Workspaces: `.local/{pipeline}/{speaker}/inbox` and `data/02 … data/10`.
+
+Configurable parameters are in the root [`.env.example`](.env.example) (shared by orchestrator and trainer).
 
 ## Documentation
 

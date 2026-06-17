@@ -5,12 +5,6 @@ from pathlib import Path
 from prefect import task
 
 from gpt_sovits_orchestrator.assemble.manifest import build_assemble_manifest
-from gpt_sovits_orchestrator.config import (
-    DATA_05_DIR,
-    DATA_06_DIR,
-    DATA_07_DIR,
-    DATA_08_DIR,
-)
 
 
 @task(name="assemble-manifest", log_prints=True)
@@ -19,10 +13,10 @@ def assemble_manifest(
     g2p_csv_path: Path,
     output_dir: Path,
     *,
-    hubert_data_dir: Path = DATA_05_DIR,
-    sv_data_dir: Path = DATA_06_DIR,
-    semantic_data_dir: Path = DATA_07_DIR,
-    wav32k_data_dir: Path = DATA_08_DIR,
+    hubert_data_dir: Path,
+    sv_data_dir: Path,
+    semantic_data_dir: Path,
+    wav32k_data_dir: Path,
 ) -> Path:
     """Build assemble manifest CSV indexing NPZ/ZIP modalities by filename."""
     output_path, count = build_assemble_manifest(

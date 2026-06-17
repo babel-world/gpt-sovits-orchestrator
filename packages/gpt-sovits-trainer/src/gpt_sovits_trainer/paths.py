@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 TRAINER_ROOT = Path(__file__).resolve().parents[2]
 REPO_ROOT = TRAINER_ROOT.parents[1]
-load_dotenv(TRAINER_ROOT / ".env", override=False)
+load_dotenv(REPO_ROOT / ".env", override=False)
 LOCAL_DIR = REPO_ROOT / ".local"
 DATA_09_DIR = LOCAL_DIR / "data_09"
 DATA_10_DIR = LOCAL_DIR / "data_10"
